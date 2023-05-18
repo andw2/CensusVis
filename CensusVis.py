@@ -4,11 +4,11 @@ CensusVis.py
 
 Author: Anderson Wong
 
-Date: May 08, 2023
+Date: May 18, 2023
 
 Description: This is a Python program that generates interactive data visualizations using
-census linked data. The generated visualization is saved as an HTML file in your current
-working directory and can be opened using any web browser. 
+census linked data from a SPARQL endpoint. The generated visualization is saved as an HTML 
+file in your current working directory that can be opened using any web browser. 
 """
 
 import folium
@@ -17,6 +17,7 @@ import pandas
 import geojson
 import sparql_dataframe
 import CensusTools
+import texttable
 
 from SPARQLWrapper import SPARQLWrapper, SPARQLWrapper2, JSON
 
@@ -41,16 +42,58 @@ while True:
         print("Sorry, your input is invalid.  Please enter 'CensusTract' or 'Neighbourhood' or 'Ward' or 'PoliceDivision' (case-sensitive)")
         continue
     
-# Prompt user to enter a characteristic class name. Prompt user to try again if input is invalid. 
+# Prompt user to enter a characteristic class name. Prompt user to try again if input is invalid. User can enter "Search" to open the search interface 
 while True:
-    characteristic = input("Please enter the class name of the characteristic to be visualized (e.g. LowIncomeMeasureAfterTax2016):")
-    sparql.setQuery("PREFIX uoft: <http://ontology.eil.utoronto.ca/tove/cacensus#> ASK {uoft:" + characteristic + " rdfs:subClassOf uoft:Characteristic}")
-    results = sparql.query().convert()
-    if results["boolean"]:
-        break
-    else:
-        print("Sorry, the class name you have entered is not in the graph database.  Please try again.")
+    characteristic = input("Please enter the class name of the characteristic to be visualized (e.g. LowIncomeMeasureAfterTax2016). To search for a charactertistic using key words, please enter \"Search\":")
+    if characteristic == "Search":
+        while True:
+            # Prompt user to enter search terms for searching characteristic names.  Entering "Exit" will exit the search interface
+            search = input("Please enter your search terms. To exit the search interface, please enter \"Exit\":")
+            # Exit search interface if user entered "Exit"
+            if search == "Exit":
+                break
+            
+            # SPARQL query that returns the characteristics that match the user's search terms
+            q = """
+            PREFIX uoft: <http://ontology.eil.utoronto.ca/tove/cacensus#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            
+            SELECT DISTINCT ?class ?comment
+            
+            WHERE{
+                ?class rdfs:subClassOf uoft:Characteristic;
+                rdfs:comment ?comment
+                FILTER CONTAINS(?comment, \"""" + search + """\") 
+            }
+            """
+            df = sparql_dataframe.get(endpoint, q)
+            
+            # Convert results from SPARQL query into a list
+            results = [['Class Name', 'Description']]
+            for index, row in df.iterrows():
+                results.append([row["class"].replace("http://ontology.eil.utoronto.ca/tove/cacensus#", ""), row["comment"]])
+                
+            # Create a texttable usiing the data from the results list
+            table =  texttable.Texttable()
+            table.set_cols_width([40, 50])
+            table.add_rows(results)
+            
+            # Print texttable search results 
+            print("Here are the search results for \"" + search + "\":")
+            print(table.draw())
+            
         continue
+    else:
+        # SPARQL query to check whether user inputted a valid characteristic name
+        sparql.setQuery("PREFIX uoft: <http://ontology.eil.utoronto.ca/tove/cacensus#> ASK {uoft:" + characteristic + " rdfs:subClassOf uoft:Characteristic}")
+        results = sparql.query().convert()
+        
+        # If valid, continue with the program. If invalid, prompt the user to try again.
+        if results["boolean"]:
+            break
+        else:
+            print("Sorry, the class name you have entered is not in the graph database.  Please try again.")
+            continue
     
 # Prompt user to enter a display name for the characteristic.
 indicator = input("Please enter the display name of the indicator (e.g. Number of low-income individuals) that is being visualized: ")

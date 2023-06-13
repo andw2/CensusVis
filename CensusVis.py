@@ -4,7 +4,7 @@ CensusVis.py
 
 Author: Anderson Wong
 
-Date: June 6, 2023
+Date: June 13, 2023
 
 Description: This is a Python program that generates interactive data visualizations using
 census linked data from a SPARQL endpoint. The generated visualization is saved as an HTML 
@@ -86,7 +86,7 @@ class Window(QWidget):
         
         # Create text box for administrative area input
         self.areainput = QLineEdit()
-        self.areainput.setFixedWidth(150)
+        self.areainput.setFixedWidth(500)
         layout.addWidget(self.areainput, alignment=Qt.AlignmentFlag.AlignLeft)
         
         # Print prompt for characteristic name
@@ -100,7 +100,7 @@ class Window(QWidget):
         
         # Create text box for characteristic name input
         self.charainput = QLineEdit()
-        self.charainput.setFixedWidth(150)
+        self.charainput.setFixedWidth(500)
         layout.addWidget(self.charainput, alignment=Qt.AlignmentFlag.AlignLeft)
         
         # Print prompt for display name
@@ -114,7 +114,7 @@ class Window(QWidget):
         
         # Create text box for display name input
         self.displayinput = QLineEdit()
-        self.displayinput.setFixedWidth(150)
+        self.displayinput.setFixedWidth(500)
         layout.addWidget(self.displayinput, alignment=Qt.AlignmentFlag.AlignLeft)
  
         # Print prompt for file name
@@ -128,7 +128,7 @@ class Window(QWidget):
         
         # Create text box for file name input
         self.fileinput = QLineEdit()
-        self.fileinput.setFixedWidth(150)
+        self.fileinput.setFixedWidth(500)
         layout.addWidget(self.fileinput, alignment=Qt.AlignmentFlag.AlignLeft)   
         
         # Create button to generate the visualization
@@ -173,7 +173,7 @@ class Window(QWidget):
         
         # Create text box for search input
         self.searchinput = QLineEdit()
-        self.searchinput.setFixedWidth(150)
+        self.searchinput.setFixedWidth(500)
         layout2.addWidget(self.searchinput, alignment=Qt.AlignmentFlag.AlignLeft)
         
         # Create search button
@@ -196,8 +196,29 @@ class Window(QWidget):
         self.tableWidget.setColumnWidth(0, 250)
         self.tableWidget.setColumnWidth(1, 600)
         self.tableWidget.setHorizontalHeaderLabels(['Class Name', 'Description'])
+        self.tableWidget.cellDoubleClicked.connect(self.cell_select)
         layout2.addWidget(self.tableWidget)
+    
+    # Function that auto fills text fields in the Visualization Generator tab using a selected search result
+    def cell_select(self):
+        # Get the row number of the selected cell
+        row = self.tableWidget.currentItem().row()
         
+        # Get the characteristic class name
+        cell1 = self.tableWidget.item(row, 0).text()
+        # Get the characteristic description
+        cell2 = self.tableWidget.item(row, 1).text()
+        
+        # Enter the characteristic class name into the characteristic class name input box
+        self.charainput.setText(cell1)
+        # Enter the characteristic description into the display name input box
+        self.displayinput.setText(cell2)
+        # Enter the characteristic class name into the file name input box
+        self.fileinput.setText(cell1)
+        # Switch to the Visualization Generator tab 
+        self.tabs.setCurrentIndex(0)
+        
+    
     # Characteristic search function    
     def search(self):
         search = self.searchinput.text()
@@ -222,16 +243,17 @@ class Window(QWidget):
         for index, row in df.iterrows():
             results.append([row["class"].replace("http://ontology.eil.utoronto.ca/tove/cacensus#", ""), row["comment"]])
         
+        # Output search results as a table
         self.tableWidget.setRowCount(len(results))
         row = 0
         for item in results:
-            print(item[0],item[1])
             self.tableWidget.setItem(row, 0, QTableWidgetItem(item[0]))
             self.tableWidget.setItem(row, 1, QTableWidgetItem(item[1]))
             row += 1
         
         self.tableWidget.resizeRowsToContents()
-        self.output2.setText("Here are the search results for \"" + search + "\":")
+        # Print search result message
+        self.output2.setText("Here are the search results for \"" + search + "\".\nDouble clicking on a search result will auto-fill the Visualization Generation tab using the selected indicator.")
         
     # Visualization generator function 
     def generate(self):

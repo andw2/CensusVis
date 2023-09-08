@@ -4,7 +4,7 @@ CensusVis.py
 
 Author: Anderson Wong
 
-Date: August 3, 2023
+Date: September 7, 2023
 
 Description: This is a Python program that generates interactive data visualizations using
 census linked data from a SPARQL endpoint. The generated visualization is saved as an HTML 
